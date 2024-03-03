@@ -161,40 +161,37 @@ export class Zone {
    * @return {Object} An object which contains {stopIteration, stopPropagation} flags.
    */
   mouseDown = (ctxPoint, locPoint, isDrawing, map, event) => {
-    if (isDrawing) {
-        this.addPoint(locPoint.lat, locPoint.lon);
+    if(isDrawing) {
+      this.addPoint(locPoint.lat, locPoint.lon);
     } else {
-        // Check if we are on a center
-        if (this.points.length < 2) {
-            return {
-                stopIteration: true,
-                stopPropagation: false
-            };
-        }
+      // Check if we are on a center
+      if(this.points.length < 2) {
+        return {
+          stopIteration: true,
+          stopPropagation: false
+        };
+      }
 
-        // Iterate through each line segment and check if the click is close enough to extend it
-        for (let i = 0; i < this.points.length; i++) {
-            const startPoint = this.points[i];
-            const endPoint = this.points[(i + 1) % this.points.length]; // Wrap around for the last point
-            const center = startPoint.ctxCenterToOther(endPoint, map);
+      let prevPoint = this.points[this.points.length - 1];
+      for(let i = 0; i < this.points.length; ++i) {
+          const curPoint = this.points[i];
+          const center = curPoint.ctxCenterToOther(prevPoint, map);
 
-            const distanceToCenter = Math.sqrt((center.x - ctxPoint.x) ** 2 + (center.y - ctxPoint.y) ** 2);
-            if (distanceToCenter < 15) {
-                // Insert a new point between the start and end points to extend the line
-                const newPointLat = (startPoint.lat + endPoint.lat) / 2;
-                const newPointLon = (startPoint.lon + endPoint.lon) / 2;
-                this.addPoint(newPointLat, newPointLon, i + 1);
-                break;
-            }
-        }
+          const distanceToCenter = Math.sqrt((center.x - ctxPoint.x) ** 2 + (center.y - ctxPoint.y) ** 2)
+          if(distanceToCenter < 15) {
+            this.addPoint(locPoint.lat, locPoint.lon, i);
+            console.log('added center point')
+            break;
+          }
+          prevPoint = curPoint;
+      }
     }
 
     return {
-        stopIteration: true,
-        stopPropagation: false
+      stopIteration: true,
+      stopPropagation: false
     };
-};
-
+  }; 
 
   /**
    * Handle a mouse movement event.

@@ -125,8 +125,6 @@ export const ReactMap = ({ className }) => {
       const ctxPoint = { x: event.offsetX, y: event.offsetY };
       const locPoint = map.current.pointLocation(ctxPoint);
 
-      let redrawNeeded = false; // Flag to track if redraw is needed
-
       zones.current.some((zone) => {
         const { stopIteration, stopPropagation } = zone.mouseMove(
           ctxPoint,
@@ -135,20 +133,16 @@ export const ReactMap = ({ className }) => {
           map.current,
           event
         );
+
         if (stopPropagation) {
           event.stopImmediatePropagation();
           event.stopPropagation();
         }
-        if (!redrawNeeded) {
-          redrawNeeded = stopIteration; // Update the redraw flag
-        }
+
         return stopIteration;
       });
 
-      // If redraw is needed, call the redraw function
-      if (redrawNeeded) {
-        redraw();
-      }
+      redraw();
     });
 
     map.current.addCallback("zoomed", () => {
@@ -157,7 +151,6 @@ export const ReactMap = ({ className }) => {
 
     map.current.addCallback("panned", redraw);
     map.current.addCallback("resized", function () {
-      console.log("resized", "res");
       canvas.width = map.dimensions.x;
       canvas.height = map.dimensions.y;
       redraw();
