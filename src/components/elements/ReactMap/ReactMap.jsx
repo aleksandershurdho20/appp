@@ -60,7 +60,7 @@ export const ReactMap = ({ className }) => {
     const ctx = mapCanvas.current.getContext("2d");
     ctx.clearRect(0, 0, mapCanvas.current.width, mapCanvas.current.height);
     const mapZoom = map.current.getZoom();
-
+    
     [tempZone.current, ...zones.current].forEach((obj) => {
       obj.draw(ctx, map.current, mapZoom);
     });
@@ -86,7 +86,7 @@ export const ReactMap = ({ className }) => {
 
       const ctxPoint = { x: event.offsetX, y: event.offsetY };
       const locPoint = map.current.pointLocation(ctxPoint);
-
+      
       if (isDrawing.current) {
         tempZone.current.mouseDown(
           ctxPoint,

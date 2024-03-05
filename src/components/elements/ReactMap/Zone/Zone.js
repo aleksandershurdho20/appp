@@ -84,7 +84,7 @@ export class Zone {
   addPoint = (lat, lon, idx = -1) => {
     const point = new ZonePoint(lat, lon, idx);
 
-    if(idx = -1) {
+    if(idx === -1) {
       this.points.push(point);
     } else {
       this.points.splice(idx, 0, point);
@@ -101,7 +101,7 @@ export class Zone {
     if(this.points?.length === 0) {
         return;
     }
-    
+    // console.log(this.points.map(p => p.ctxCoord(map)))
     // Draw the zone bounding box
     ctx.beginPath();
     ctx.strokeStyle = "black";
@@ -128,6 +128,8 @@ export class Zone {
         ctx.arc(pointCtx.x, pointCtx.y, 15 * (this.points[i].isFocused ? 1.4 : 1), 0, 2 * Math.PI);
         ctx.fill();
         ctx.closePath();
+        ctx.font = "20px serif";
+        ctx.fillText(`     (${pointCtx.x}, ${pointCtx.y})`, pointCtx.x, pointCtx.y);
     }
 
     // Draw center circle to add points to a zone
@@ -180,7 +182,8 @@ export class Zone {
           const distanceToCenter = Math.sqrt((center.x - ctxPoint.x) ** 2 + (center.y - ctxPoint.y) ** 2)
           if(distanceToCenter < 15) {
             this.addPoint(locPoint.lat, locPoint.lon, i);
-            console.log('added center point')
+            console.log('added center point', i)
+            console.log(this.points.map(p => p.ctxCoord(map)))
             break;
           }
           prevPoint = curPoint;
