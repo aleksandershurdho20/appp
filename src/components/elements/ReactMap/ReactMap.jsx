@@ -15,6 +15,7 @@ export const ReactMap = ({ className }) => {
   const lastCenter = useRef([51.3510015, 3.20376]);
   const lastRedrawTime = useRef(0);
 
+  const isMovingPoints = useRef(false);
   const [zoom, setZoom] = useState(8);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -31,14 +32,34 @@ export const ReactMap = ({ className }) => {
     ),
   ]);
 
+  const prevCanvasState = useRef(null);
+
   const startDrawing = () => {
     isDrawing.current = true;
+
+    if (mapCanvas.current !== undefined) {
+      prevCanvasState.current = mapCanvas.current.toDataURL();
+    }
   };
 
   const cancelDrawing = () => {
-    isDrawing.current = false;
+    if (!isDrawing.current) {
+      return;
+    }
 
+    isDrawing.current = false;
     tempZone.current = new Zone();
+
+    // Restore the previous state of the canvas
+    if (mapCanvas.current !== undefined && prevCanvasState.current !== null) {
+      const ctx = mapCanvas.current.getContext("2d");
+      const img = new Image();
+      img.src = prevCanvasState.current;
+      img.onload = () => {
+        ctx.clearRect(0, 0, mapCanvas.current.width, mapCanvas.current.height);
+        ctx.drawImage(img, 0, 0);
+      };
+    }
   };
 
   const finishDrawing = () => {
@@ -63,6 +84,15 @@ export const ReactMap = ({ className }) => {
 
     [tempZone.current, ...zones.current].forEach((obj) => {
       obj.draw(ctx, map.current, mapZoom);
+
+      // Append name only when when we have finished creating a zone
+      if (obj !== tempZone.current) {
+        const centroid = obj.calculateCentroid(map.current);
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText(obj.name, centroid.x, centroid.y);
+      }
     });
 
     lastRedrawTime.current = new Date().getTime();
@@ -81,26 +111,66 @@ export const ReactMap = ({ className }) => {
 
     mapCanvas.current = MM.MapCanvas(map.current);
 
-    mapCanvas.current.addEventListener("mousedown", (event) => {
-      isMouseDown.current = true;
+    mapCanvas.current.addEventListener(
+      "mousedown",
+      (event) => {
+        isMouseDown.current = true;
 
-      const ctxPoint = { x: event.offsetX, y: event.offsetY };
-      const locPoint = map.current.pointLocation(ctxPoint);
+        const ctxPoint = { x: event.offsetX, y: event.offsetY };
+        const locPoint = map.current.pointLocation(ctxPoint);
 
-      if (isDrawing.current) {
-        tempZone.current.mouseDown(
-          ctxPoint,
-          locPoint,
-          isDrawing.current,
-          map.current,
-          event
-        );
-      } else {
-        zones.current.some((zone) => {
-          const { stopIteration, stopPropagation } = zone.mouseDown(
+        if (isDrawing.current) {
+          tempZone.current.mouseDown(
             ctxPoint,
             locPoint,
             isDrawing.current,
+            map.current,
+            event
+          );
+        } else {
+          zones.current.forEach((zone) => {
+            const { stopIteration, stopPropagation } = zone.mouseDown(
+              ctxPoint,
+              locPoint,
+              isDrawing.current,
+              map.current,
+              event
+            );
+
+            if (stopPropagation) {
+              event.stopImmediatePropagation();
+              event.stopPropagation();
+            }
+
+            return stopIteration;
+          });
+        }
+
+        redraw();
+      },
+      { capture: true }
+    );
+
+    mapCanvas.current.addEventListener(
+      "mouseup",
+      (event) => {
+        isMouseDown.current = false;
+        isMovingPoints.current = false;
+      },
+      { capture: true }
+    );
+
+    mapCanvas.current.addEventListener(
+      "mousemove",
+      (event) => {
+        const ctxPoint = { x: event.offsetX, y: event.offsetY };
+        const locPoint = map.current.pointLocation(ctxPoint);
+
+        zones.current.some((zone) => {
+          const { stopIteration, stopPropagation } = zone.mouseMove(
+            ctxPoint,
+            locPoint,
+            isMouseDown.current,
             map.current,
             event
           );
@@ -109,41 +179,13 @@ export const ReactMap = ({ className }) => {
             event.stopImmediatePropagation();
             event.stopPropagation();
           }
-
           return stopIteration;
         });
-      }
 
-      redraw();
-    });
-
-    mapCanvas.current.addEventListener("mouseup", (event) => {
-      isMouseDown.current = false;
-    });
-
-    mapCanvas.current.addEventListener("mousemove", (event) => {
-      const ctxPoint = { x: event.offsetX, y: event.offsetY };
-      const locPoint = map.current.pointLocation(ctxPoint);
-
-      zones.current.some((zone) => {
-        const { stopIteration, stopPropagation } = zone.mouseMove(
-          ctxPoint,
-          locPoint,
-          isMouseDown.current,
-          map.current,
-          event
-        );
-
-        if (stopPropagation) {
-          event.stopImmediatePropagation();
-          event.stopPropagation();
-        }
-
-        return stopIteration;
-      });
-
-      redraw();
-    });
+        redraw();
+      },
+      { capture: true }
+    );
 
     map.current.addCallback("zoomed", () => {
       redraw();
@@ -171,11 +213,6 @@ export const ReactMap = ({ className }) => {
       map.current.setZoom(zoom);
       lastZoom.current = zoom;
     }
-
-    // if(center !== lastCenter.current) {
-    //   map.current.setCenter(new MM.Location(center[0], center[1]));
-    //   lastCenter.current = center;
-    // }
   }
 
   return (
@@ -183,7 +220,7 @@ export const ReactMap = ({ className }) => {
       <button onClick={startDrawing}>Draw a polyline</button>
       <button onClick={finishDrawing}>Finish</button>
       <button onClick={cancelDrawing}>Cancel</button>
-      <button onClick={toggleEdit}>Edit zones</button>
+      {/* <button onClick={toggleEdit}>Edit zones</button> */}
       <div id={mapId.current} className={className} />
     </>
   );
