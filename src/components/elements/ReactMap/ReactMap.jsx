@@ -1,8 +1,10 @@
 import { MM } from "../ModestMap";
 import { useEffect, useRef, useState } from "react";
-import { Zone } from "./Zone";
+import { Zone, ZonePoint } from "./Zone";
 import Modal from "../Modal";
 import Upload from "../Upload";
+import { handleFileRead } from "src/utils";
+import ButtonGroup from "../ButtonGroup";
 
 export const ReactMap = ({ className }) => {
   const zones = useRef([]);
@@ -79,6 +81,7 @@ export const ReactMap = ({ className }) => {
       return;
     }
 
+
     const ctx = mapCanvas.current.getContext("2d");
     ctx.clearRect(0, 0, mapCanvas.current.width, mapCanvas.current.height);
     const mapZoom = map.current.getZoom();
@@ -99,6 +102,7 @@ export const ReactMap = ({ className }) => {
     lastRedrawTime.current = new Date().getTime();
   };
 
+  console.log(tempZone.current)
   useEffect(() => {
     if (map.current !== undefined) {
       return;
@@ -114,7 +118,6 @@ export const ReactMap = ({ className }) => {
 
     mapCanvas.current.addEventListener("mousedown", (event) => {
       isMouseDown.current = true;
-
       const ctxPoint = { x: event.offsetX, y: event.offsetY };
       const locPoint = map.current.pointLocation(ctxPoint);
 
@@ -190,6 +193,7 @@ export const ReactMap = ({ className }) => {
       new MM.Location(lastCenter.current[0], lastCenter.current[1]),
       lastZoom.current,
     );
+    
   }, []);
 
   if (new Date().getTime() - lastRedrawTime.current > 500) {
@@ -222,9 +226,23 @@ export const ReactMap = ({ className }) => {
   };
 
   const [showUpload,setShowUpload]=useState(false)
+
+  const options = [
+    { value: 'opt', label: 'Draw a polyline',onClick:startDrawing },
+    { value: 'option2', label: 'Finish',onClick:finishDrawing },
+    { value: 'option3', label: 'Cancel', onClick:cancelDrawing },
+    { value: 'option3', label: 'Delete' , onClick: () => {
+      setIsOpen(true);
+      setZdata(zones.current);
+    }},
+
+  ];
+
   return (
     <>
-      <button onClick={startDrawing}>Draw a polyline</button>
+
+    <ButtonGroup options={options}/>
+      {/* <button onClick={startDrawing}>Draw a polyline</button>
       <button onClick={finishDrawing}>Finish</button>
       <button onClick={cancelDrawing}>Cancel</button>
       <button
@@ -236,7 +254,8 @@ export const ReactMap = ({ className }) => {
       >
         Delete Zones
       </button>
-      <button onClick={() => setShowUpload(true)} >Upload file</button>
+      <button onClick={() => setShowUpload(true)} >Upload file</button> */}
+
       {/* <button onClick={toggleEdit}>Edit zones</button> */}
       <div id={mapId.current} className={className} />
 
@@ -266,9 +285,29 @@ export const ReactMap = ({ className }) => {
 
 
       <Modal title="Upload FIle" isOpen={showUpload} onClose={() => setShowUpload(false)}>
-              <Upload onFilesSelected={(f) => console.log(f,"file")}/>
+        <Upload onFilesSelected={ async (f) => {
+          
+          const cordinates =  await handleFileRead(f[0])
 
+
+          // const ctxPoint = { x: cordinates[0].latitude, y: cordinates[0].longitude };
+          //     const locPoint = map.current.pointLocation(ctxPoint);
+          //     console.log(locPoint)
+          //     const a = new ZonePoint(locPoint.lat,locPoint.lon,-1)
+          //     tempZone.current.points.push(a)
+
+          //     zones.current.push(tempZone.current);
+    
+
+        }
+      
+      }
+        
+        
+        />
       </Modal>
+
+      {console.log(tempZone.current,"curto")}
     </>
   );
 };
