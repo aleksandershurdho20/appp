@@ -26,12 +26,12 @@ export const ReactMap = ({ className }) => {
     new MM.TemplatedLayer(
       "https://{S}.tile.openstreetmap.org/{Z}/{X}/{Y}.png",
       ["a", "b", "c"],
-      "seaMap",
+      "seaMap"
     ),
     new MM.TemplatedLayer(
       "https://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png",
       ["a", "b", "c"],
-      "seaMap",
+      "seaMap"
     ),
   ]);
 
@@ -81,7 +81,6 @@ export const ReactMap = ({ className }) => {
       return;
     }
 
-
     const ctx = mapCanvas.current.getContext("2d");
     ctx.clearRect(0, 0, mapCanvas.current.width, mapCanvas.current.height);
     const mapZoom = map.current.getZoom();
@@ -102,7 +101,7 @@ export const ReactMap = ({ className }) => {
     lastRedrawTime.current = new Date().getTime();
   };
 
-  console.log(tempZone.current)
+  console.log(tempZone.current);
   useEffect(() => {
     if (map.current !== undefined) {
       return;
@@ -127,7 +126,7 @@ export const ReactMap = ({ className }) => {
           locPoint,
           isDrawing.current,
           map.current,
-          event,
+          event
         );
       } else {
         zones.current.forEach((zone) => {
@@ -136,7 +135,7 @@ export const ReactMap = ({ className }) => {
             locPoint,
             isDrawing.current,
             map.current,
-            event,
+            event
           );
 
           if (stopPropagation) {
@@ -165,7 +164,7 @@ export const ReactMap = ({ className }) => {
           locPoint,
           isMouseDown.current,
           map.current,
-          event,
+          event
         );
 
         if (stopPropagation) {
@@ -191,9 +190,8 @@ export const ReactMap = ({ className }) => {
 
     map.current.setCenterZoom(
       new MM.Location(lastCenter.current[0], lastCenter.current[1]),
-      lastZoom.current,
+      lastZoom.current
     );
-    
   }, []);
 
   if (new Date().getTime() - lastRedrawTime.current > 500) {
@@ -225,23 +223,26 @@ export const ReactMap = ({ className }) => {
     setZdata(updatedZData);
   };
 
-  const [showUpload,setShowUpload]=useState(false)
+  const [showUpload, setShowUpload] = useState(false);
 
   const options = [
-    { value: 'opt', label: 'Draw a polyline',onClick:startDrawing },
-    { value: 'option2', label: 'Finish',onClick:finishDrawing },
-    { value: 'option3', label: 'Cancel', onClick:cancelDrawing },
-    { value: 'option3', label: 'Delete' , onClick: () => {
-      setIsOpen(true);
-      setZdata(zones.current);
-    }},
-
+    { value: "opt", label: "Draw a polyline", onClick: startDrawing },
+    { value: "option2", label: "Finish", onClick: finishDrawing },
+    { value: "option3", label: "Cancel", onClick: cancelDrawing },
+    {
+      value: "option3",
+      label: "Delete",
+      onClick: () => {
+        setIsOpen(true);
+        setZdata(zones.current);
+      },
+    },
+    { value: "f", label: "Upload", onClick: () => setShowUpload(true) },
   ];
 
   return (
     <>
-
-    <ButtonGroup options={options}/>
+      <ButtonGroup options={options} />
       {/* <button onClick={startDrawing}>Draw a polyline</button>
       <button onClick={finishDrawing}>Finish</button>
       <button onClick={cancelDrawing}>Cancel</button>
@@ -283,31 +284,27 @@ export const ReactMap = ({ className }) => {
         </div>
       </Modal>
 
+      <Modal
+        title="Upload FIle"
+        isOpen={showUpload}
+        onClose={() => setShowUpload(false)}
+      >
+        <Upload
+          onFilesSelected={async (f) => {
+            const cordinates = await handleFileRead(f[0]);
 
-      <Modal title="Upload FIle" isOpen={showUpload} onClose={() => setShowUpload(false)}>
-        <Upload onFilesSelected={ async (f) => {
-          
-          const cordinates =  await handleFileRead(f[0])
+            // const ctxPoint = { x: cordinates[0].latitude, y: cordinates[0].longitude };
+            //     const locPoint = map.current.pointLocation(ctxPoint);
+            //     console.log(locPoint)
+            //     const a = new ZonePoint(locPoint.lat,locPoint.lon,-1)
+            //     tempZone.current.points.push(a)
 
-
-          // const ctxPoint = { x: cordinates[0].latitude, y: cordinates[0].longitude };
-          //     const locPoint = map.current.pointLocation(ctxPoint);
-          //     console.log(locPoint)
-          //     const a = new ZonePoint(locPoint.lat,locPoint.lon,-1)
-          //     tempZone.current.points.push(a)
-
-          //     zones.current.push(tempZone.current);
-    
-
-        }
-      
-      }
-        
-        
+            //     zones.current.push(tempZone.current);
+          }}
         />
       </Modal>
 
-      {console.log(tempZone.current,"curto")}
+      {console.log(tempZone.current, "curto")}
     </>
   );
 };
