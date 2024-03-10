@@ -22,18 +22,7 @@ export const ReactMap = ({ className }) => {
   const [zoom, setZoom] = useState(8);
   const [isEditing, setIsEditing] = useState(false);
 
-  const layers = useRef([
-    new MM.TemplatedLayer(
-      "https://{S}.tile.openstreetmap.org/{Z}/{X}/{Y}.png",
-      ["a", "b", "c"],
-      "seaMap"
-    ),
-    new MM.TemplatedLayer(
-      "https://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png",
-      ["a", "b", "c"],
-      "seaMap"
-    ),
-  ]);
+  const layers = useRef([new MM.TemplatedLayer("https://{S}.tile.openstreetmap.org/{Z}/{X}/{Y}.png", ["a", "b", "c"], "seaMap"), new MM.TemplatedLayer("https://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png", ["a", "b", "c"], "seaMap")]);
 
   const prevCanvasState = useRef(null);
 
@@ -67,7 +56,9 @@ export const ReactMap = ({ className }) => {
 
   const finishDrawing = () => {
     isDrawing.current = false;
-
+    const ctx = mapCanvas.current.getContext("2d");
+    ctx.clearRect(0, 0, mapCanvas.current.width, mapCanvas.current.height);
+    tempZone.current.finishDrawing();
     zones.current.push(tempZone.current);
     tempZone.current = new Zone();
   };
@@ -84,7 +75,7 @@ export const ReactMap = ({ className }) => {
     const ctx = mapCanvas.current.getContext("2d");
     ctx.clearRect(0, 0, mapCanvas.current.width, mapCanvas.current.height);
     const mapZoom = map.current.getZoom();
-    
+
     [tempZone.current, ...zones.current].forEach((obj) => {
       obj.draw(ctx, map.current, mapZoom);
 
@@ -107,11 +98,7 @@ export const ReactMap = ({ className }) => {
       return;
     }
 
-    map.current = new MM.Map(mapId.current, layers.current, null, [
-      new MM.MouseWheelHandler(),
-      new MM.DragHandler(),
-      new MM.TouchHandler(),
-    ]);
+    map.current = new MM.Map(mapId.current, layers.current, null, [new MM.MouseWheelHandler(), new MM.DragHandler(), new MM.TouchHandler()]);
 
     mapCanvas.current = MM.MapCanvas(map.current);
 
@@ -119,24 +106,12 @@ export const ReactMap = ({ className }) => {
       isMouseDown.current = true;
       const ctxPoint = { x: event.offsetX, y: event.offsetY };
       const locPoint = map.current.pointLocation(ctxPoint);
-      
+
       if (isDrawing.current) {
-        tempZone.current.mouseDown(
-          ctxPoint,
-          locPoint,
-          isDrawing.current,
-          map.current,
-          event
-        );
+        tempZone.current.mouseDown(ctxPoint, locPoint, isDrawing.current, map.current, event);
       } else {
         zones.current.forEach((zone) => {
-          const { stopIteration, stopPropagation } = zone.mouseDown(
-            ctxPoint,
-            locPoint,
-            isDrawing.current,
-            map.current,
-            event
-          );
+          const { stopIteration, stopPropagation } = zone.mouseDown(ctxPoint, locPoint, isDrawing.current, map.current, event);
 
           if (stopPropagation) {
             event.stopImmediatePropagation();
@@ -157,15 +132,19 @@ export const ReactMap = ({ className }) => {
     mapCanvas.current.addEventListener("mousemove", (event) => {
       const ctxPoint = { x: event.offsetX, y: event.offsetY };
       const locPoint = map.current.pointLocation(ctxPoint);
-
+      if (isDrawing.current) {
+        const ctx = mapCanvas.current.getContext("2d");
+        tempZone.current.linePreview(ctxPoint)
+        redraw();
+      }
       zones.current.some((zone) => {
-        const { stopIteration, stopPropagation } = zone.mouseMove(
-          ctxPoint,
-          locPoint,
-          isMouseDown.current,
-          map.current,
-          event
-        );
+        var stopIteration = false;
+        var stopPropagation = false;
+        if (!isDrawing.current) {
+          const res = zone.mouseMove(ctxPoint, locPoint, isMouseDown.current, map.current, event);
+          stopIteration = res.stopIteration
+          stopPropagation = res.stopPropagation
+        }
 
         if (stopPropagation) {
           event.stopImmediatePropagation();
@@ -188,10 +167,7 @@ export const ReactMap = ({ className }) => {
       redraw();
     });
 
-    map.current.setCenterZoom(
-      new MM.Location(lastCenter.current[0], lastCenter.current[1]),
-      lastZoom.current
-    );
+    map.current.setCenterZoom(new MM.Location(lastCenter.current[0], lastCenter.current[1]), lastZoom.current);
   }, []);
 
   if (new Date().getTime() - lastRedrawTime.current > 500) {
@@ -230,7 +206,7 @@ export const ReactMap = ({ className }) => {
     { value: "option2", label: "Finish", onClick: finishDrawing },
     { value: "option3", label: "Cancel", onClick: cancelDrawing },
     {
-      value: "option3",
+      value: "option4",
       label: "Delete",
       onClick: () => {
         setIsOpen(true);
@@ -260,22 +236,13 @@ export const ReactMap = ({ className }) => {
       {/* <button onClick={toggleEdit}>Edit zones</button> */}
       <div id={mapId.current} className={className} />
 
-      <Modal
-        title="Delete Zones"
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onSave={deleteZone}
-        onCancel={onCancel}
-      >
+      <Modal title="Delete Zones" isOpen={isOpen} onClose={() => setIsOpen(false)} onSave={deleteZone} onCancel={onCancel}>
         <div className="chip-wrapper">
           {zData.length > 0 &&
             zData.map((zone, index) => (
               <div className="chip" key={index}>
                 <span>{zone.name}</span>
-                <button
-                  className="remove-button"
-                  onClick={() => deleteZones(index)}
-                >
+                <button className="remove-button" onClick={() => deleteZones(index)}>
                   {" "}
                   &times;
                 </button>
@@ -284,22 +251,26 @@ export const ReactMap = ({ className }) => {
         </div>
       </Modal>
 
-      <Modal
-        title="Upload FIle"
-        isOpen={showUpload}
-        onClose={() => setShowUpload(false)}
-      >
+      <Modal title="Upload FIle" isOpen={showUpload} onClose={() => setShowUpload(false)}>
         <Upload
           onFilesSelected={async (f) => {
             const cordinates = await handleFileRead(f[0]);
-
+            console.log("Coordinates", cordinates);
+            
             // const ctxPoint = { x: cordinates[0].latitude, y: cordinates[0].longitude };
-            //     const locPoint = map.current.pointLocation(ctxPoint);
-            //     console.log(locPoint)
-            //     const a = new ZonePoint(locPoint.lat,locPoint.lon,-1)
-            //     tempZone.current.points.push(a)
+            // const locPoint = map.current.pointLocation(ctxPoint);
+            // console.log(locPoint);const a = new ZonePoint(locPoint.lat, locPoint.lon, -1);
+            // tempZone.current.points.push(a);
 
-            //     zones.current.push(tempZone.current);
+            // zones.current.push(tempZone.current);
+            
+            const locPoints = cordinates.map(c => map.current.pointLocation({ x: c.latitude, y: c.longitude }))
+            locPoints.forEach(lp => {
+              const a = new ZonePoint(lp.lat, lp.lon, -1);
+              tempZone.current.points.push(a);
+            })
+            redraw();
+            setShowUpload(false)
           }}
         />
       </Modal>
