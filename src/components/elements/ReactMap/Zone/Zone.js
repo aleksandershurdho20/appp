@@ -236,33 +236,30 @@ export class Zone {
 
 
 
-    // const cStart = map.locationPoint(this.start);
-    // const cEnd = map.locationPoint(this.end);
-    // const cCenter = this.center === undefined ? undefined : map.locationPoint(this.center);
-
-    // this.startHover = pointDistance(cStart, {x, y}) < this.draggerRadius;
-    // this.endHover = pointDistance(cEnd, {x, y}) < this.draggerRadius;
-
-    // if(cCenter != undefined) {
-    //   this.centerHover = pointDistance(cCenter, {x, y}) < this.draggerRadius;
-    // } else {
-    //   this.centerHover = false;
-    // }
-
-    // if(isMouseDown) {
-    //   if(this.startHover) {
-    //     this.setPoints(map.pointLocation({x, y}), this.end, map);
-    //   }
-
-    //   if(this.endHover) {
-    //     this.setPoints(this.start, map.pointLocation({x, y}), map);
-    //   }
-    // }
-
-    // const isOnPathHandle = this.startHover || this.centerHover || this.endHover;
     return {
         stopIteration: false,
         stopPropagation: selectedPoint !== undefined
     };
   }
+
+
+  /**
+   * Calculate the centroid of the zone.
+   * 
+   * @param {ModestMap} map The map over which the canvas is overlayed.
+   * @returns {Object} The centroid coordinates as {x, y}.
+   */
+  calculateCentroid = (map) => {
+      let sumX = 0;
+      let sumY = 0;
+      for (const point of this.points) {
+          const ctxPoint = point.ctxCoord(map);
+          sumX += ctxPoint.x;
+          sumY += ctxPoint.y;
+      }
+      const centroidX = sumX / this.points.length;
+      const centroidY = sumY / this.points.length;
+      return { x: centroidX, y: centroidY };
+  };
+
 };

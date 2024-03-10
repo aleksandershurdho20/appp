@@ -1,3 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700;800&display=swap');
+
+*{
+
+    font-family: 'Lato',sans-serif;
+}
+
 .leaflet-div-icon {
   width: 10px !important;
   height: 10px !important;
@@ -32,4 +39,26 @@
 
 .header-wrapper .logo{
   max-width: 100px;
+}
+
+
+.button-group {
+  display: inline-flex;
+  border-radius: .375rem;
+}
+
+.button-group  button {
+
+  color:rgb(17 24 39/1);
+  font-weight: 500;
+  font-size: .875rem;
+  line-height: 1.25rem;
+  padding: 0.5rem 1rem;
+  background-color: rgb(255 255 255/1);
+  border:1px solid rgb(229 231 235/1);
+  border-end-start-radius: 0.5rem;
+  border-start-start-radius: 0.5rem;
+  cursor:pointer;
+
+
 }
